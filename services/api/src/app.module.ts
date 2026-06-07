@@ -11,6 +11,8 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { LocationsModule } from './locations/locations.module';
 import { DevicesModule } from './devices/devices.module';
+import { CassandraModule } from './cassandra/cassandra.module';
+import { ReadingsModule } from './readings/readings.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { DevicesModule } from './devices/devices.module';
     AuthModule,
     LocationsModule,
     DevicesModule,
+    CassandraModule,
+    ReadingsModule,
   ],
   controllers: [AppController],
   providers: [AppService, HealthResolver],
