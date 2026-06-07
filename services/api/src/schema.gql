@@ -12,12 +12,49 @@ type AuthResponse {
   accessToken: String!
 }
 
+type LocationModel {
+  id: ID!
+  name: String!
+  description: String
+  latitude: Float!
+  longitude: Float!
+  address: String
+  city: String
+  country: String
+}
+
 type Query {
   health: String!
   me: UserModel!
+  locations: [LocationModel!]!
+  location(id: String!): LocationModel!
 }
 
 type Mutation {
   register(name: String!, email: String!, password: String!): AuthResponse!
   login(email: String!, password: String!): AuthResponse!
+  createLocation(input: CreateLocationInput!): LocationModel!
+  updateLocation(input: UpdateLocationInput!): LocationModel!
+  removeLocation(id: String!): LocationModel!
+}
+
+input CreateLocationInput {
+  name: String!
+  description: String
+  latitude: Float!
+  longitude: Float!
+  address: String
+  city: String
+  country: String
+}
+
+input UpdateLocationInput {
+  id: ID!
+  name: String
+  description: String
+  latitude: Float
+  longitude: Float
+  address: String
+  city: String
+  country: String
 }
