@@ -17,4 +17,8 @@ export class UsersService {
   create(data: { name: string; email: string; passwordHash: string }) {
     return this.userModel.create(data);
   }
+
+  findById(id: string) {
+    return this.userModel.findById(id).exec();
+  }
 }
