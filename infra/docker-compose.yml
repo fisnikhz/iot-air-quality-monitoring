@@ -1,0 +1,26 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: iot-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  cassandra:
+    image: cassandra:5
+    container_name: iot-cassandra
+    restart: unless-stopped
+    ports:
+      - "9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: iot-air-quality
+      CASSANDRA_DC: datacenter1
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+
+volumes:
+  mongo-data:
+  cassandra-data:
