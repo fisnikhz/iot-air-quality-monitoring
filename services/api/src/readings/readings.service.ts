@@ -2,11 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { CassandraService } from '../cassandra/cassandra.service';
 import { CreateReadingInput } from './dto/create-reading.input';
 import { ReadingsFilterInput } from './dto/readings-filter.input';
+import { ReadingsGateway } from './readings.gateway';
 import { AirQualityReadingModel } from './models/air-quality-reading.model';
 
 @Injectable()
 export class ReadingsService {
-  constructor(private readonly cassandraService: CassandraService) {}
+  constructor(
+    private readonly cassandraService: CassandraService,
+    private readonly readingsGateway: ReadingsGateway,
+  ) {}
 
   async create(input: CreateReadingInput) {
     const timestamp = input.timestamp ?? new Date();
@@ -68,6 +72,8 @@ export class ReadingsService {
         input.aqi,
       ],
     );
+
+    this.readingsGateway.emitReading(reading);
 
     return reading;
   }
