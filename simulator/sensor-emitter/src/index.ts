@@ -1,17 +1,4 @@
-type GraphqlResponse<T> = {
-  data?: T;
-  errors?: Array<{ message: string }>;
-};
-
-type LoginResponse = {
-  login: {
-    accessToken: string;
-  };
-};
-
-type ReadingResponse = {
-  createReading: AirQualityReading;
-};
+import { Kafka, type Producer } from 'kafkajs';
 
 type AirQualityReading = {
   deviceId: string;
@@ -25,9 +12,16 @@ type AirQualityReading = {
   aqi: number;
 };
 
-type ReadingPayload = Omit<AirQualityReading, 'deviceId' | 'locationId' | 'timestamp'>;
+type ReadingPayload = Omit<
+  AirQualityReading,
+  'deviceId' | 'locationId' | 'timestamp'
+>;
 
-const apiUrl = env('API_URL', 'http://localhost:3000/graphql');
+const brokers = env('KAFKA_BROKERS', 'localhost:9092')
+  .split(',')
+  .map((broker) => broker.trim())
+  .filter(Boolean);
+const topic = env('KAFKA_TOPIC', 'air-quality-readings');
 const deviceId = requiredEnv('DEVICE_ID');
 const locationId = requiredEnv('LOCATION_ID');
 const intervalMs = Number(env('INTERVAL_MS', '5000'));
@@ -42,100 +36,53 @@ main().catch((error: Error) => {
 });
 
 async function main() {
-  const token = await getAuthToken();
+  const kafka = new Kafka({
+    clientId: 'sensor-emitter',
+    brokers,
+  });
+  const producer = kafka.producer();
 
   console.log(`Sensor emitter started for device ${deviceId}`);
-  console.log(`Sending readings to ${apiUrl} every ${intervalMs}ms`);
+  console.log(`Publishing readings to Kafka topic ${topic}`);
+  console.log(`Brokers: ${brokers.join(', ')}`);
+  console.log(`Interval: ${intervalMs}ms`);
 
-  await emitOnce(token);
+  await producer.connect();
+
+  await emitOnce(producer);
   setInterval(() => {
-    emitOnce(token).catch((error: Error) => {
+    emitOnce(producer).catch((error: Error) => {
       console.error(`Failed to emit reading: ${error.message}`);
     });
   }, intervalMs);
-}
 
-async function getAuthToken() {
-  const token = env('AUTH_TOKEN', '');
-
-  if (token) {
-    return token;
-  }
-
-  const email = requiredEnv('SIM_EMAIL');
-  const password = requiredEnv('SIM_PASSWORD');
-  const response = await graphql<LoginResponse>({
-    query: `mutation Login($email: String!, $password: String!) {
-      login(email: $email, password: $password) {
-        accessToken
-      }
-    }`,
-    variables: { email, password },
+  process.on('SIGINT', async () => {
+    await producer.disconnect();
+    process.exit(0);
   });
-
-  return response.login.accessToken;
 }
 
-async function emitOnce(token: string) {
-  const reading = createOutdoorReading();
-  const response = await graphql<ReadingResponse>(
-    {
-      query: `mutation CreateReading($input: CreateReadingInput!) {
-        createReading(input: $input) {
-          deviceId
-          locationId
-          timestamp
-          pm25
-          pm10
-          co2
-          temperature
-          humidity
-          aqi
-        }
-      }`,
-      variables: {
-        input: {
-          deviceId,
-          locationId,
-          ...reading,
-        },
+async function emitOnce(producer: Producer) {
+  const reading: AirQualityReading = {
+    deviceId,
+    locationId,
+    timestamp: new Date().toISOString(),
+    ...createOutdoorReading(),
+  };
+
+  await producer.send({
+    topic,
+    messages: [
+      {
+        key: deviceId,
+        value: JSON.stringify(reading),
       },
-    },
-    token,
-  );
-
-  const saved = response.createReading;
-  console.log(
-    `${saved.timestamp} AQI=${saved.aqi} PM2.5=${saved.pm25} PM10=${saved.pm10} CO2=${saved.co2}`,
-  );
-}
-
-async function graphql<T>(
-  body: {
-    query: string;
-    variables?: Record<string, unknown>;
-  },
-  token?: string,
-) {
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify(body),
+    ],
   });
 
-  const payload = (await response.json()) as GraphqlResponse<T>;
-
-  if (!response.ok || payload.errors?.length || !payload.data) {
-    const message =
-      payload.errors?.map((error) => error.message).join('; ') ||
-      `HTTP ${response.status}`;
-    throw new Error(message);
-  }
-
-  return payload.data;
+  console.log(
+    `${reading.timestamp} produced AQI=${reading.aqi} PM2.5=${reading.pm25} PM10=${reading.pm10} CO2=${reading.co2}`,
+  );
 }
 
 function createOutdoorReading(): ReadingPayload {
