@@ -23,11 +23,45 @@ type LocationModel {
   country: String
 }
 
+type DeviceModel {
+  id: ID!
+  name: String!
+  externalId: String!
+  locationId: ID!
+  status: DeviceStatus!
+  metrics: [SensorMetric!]!
+  installedAt: DateTime
+  lastSeenAt: DateTime
+}
+
+enum DeviceStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum SensorMetric {
+  PM25
+  PM10
+  CO2
+  TEMPERATURE
+  HUMIDITY
+  AQI
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
 type Query {
   health: String!
   me: UserModel!
   locations: [LocationModel!]!
   location(id: String!): LocationModel!
+  devices: [DeviceModel!]!
+  devicesByLocation(locationId: String!): [DeviceModel!]!
+  device(id: String!): DeviceModel!
 }
 
 type Mutation {
@@ -36,6 +70,9 @@ type Mutation {
   createLocation(input: CreateLocationInput!): LocationModel!
   updateLocation(input: UpdateLocationInput!): LocationModel!
   removeLocation(id: String!): LocationModel!
+  createDevice(input: CreateDeviceInput!): DeviceModel!
+  updateDevice(input: UpdateDeviceInput!): DeviceModel!
+  removeDevice(id: String!): DeviceModel!
 }
 
 input CreateLocationInput {
@@ -57,4 +94,24 @@ input UpdateLocationInput {
   address: String
   city: String
   country: String
+}
+
+input CreateDeviceInput {
+  name: String!
+  externalId: String!
+  locationId: ID!
+  status: DeviceStatus
+  metrics: [SensorMetric!]
+  installedAt: DateTime
+}
+
+input UpdateDeviceInput {
+  id: ID!
+  name: String
+  externalId: String
+  locationId: ID
+  status: DeviceStatus
+  metrics: [SensorMetric!]
+  installedAt: DateTime
+  lastSeenAt: DateTime
 }

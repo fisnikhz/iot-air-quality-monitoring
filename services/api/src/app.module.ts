@@ -10,6 +10,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { LocationsModule } from './locations/locations.module';
+import { DevicesModule } from './devices/devices.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { LocationsModule } from './locations/locations.module';
     UsersModule,
     AuthModule,
     LocationsModule,
+    DevicesModule,
   ],
   controllers: [AppController],
   providers: [AppService, HealthResolver],
