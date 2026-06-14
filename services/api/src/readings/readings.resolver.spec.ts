@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ReadingsResolver } from './readings.resolver';
 import { ReadingsService } from './readings.service';
+import { KafkaProducerService } from './kafka-producer.service';
 
 describe('ReadingsResolver', () => {
   let resolver: ReadingsResolver;
@@ -16,6 +17,12 @@ describe('ReadingsResolver', () => {
             latestByDevice: jest.fn(),
             findByDevice: jest.fn(),
             findByLocation: jest.fn(),
+          },
+        },
+        {
+          provide: KafkaProducerService,
+          useValue: {
+            publishSimulatedReading: jest.fn(),
           },
         },
       ],

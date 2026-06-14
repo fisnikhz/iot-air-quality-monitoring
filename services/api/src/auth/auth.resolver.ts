@@ -16,10 +16,7 @@ export class AuthResolver {
   }
 
   @Mutation(() => AuthResponse)
-  login(
-    @Args('email') email: string,
-    @Args('password') password: string,
-  ) {
+  login(@Args('email') email: string, @Args('password') password: string) {
     return this.authService.login(email, password);
   }
 }

@@ -64,6 +64,49 @@ type AirQualityReadingModel {
   temperature: Float!
   humidity: Float!
   aqi: Int!
+  anomalyScore: Float
+  alertLevel: String
+  qualityStatus: String
+  processedAt: DateTime
+  processingLatencyMs: Float
+}
+
+type AirQualityAlertModel {
+  deviceId: String!
+  locationId: String!
+  timestamp: DateTime!
+  alertLevel: String!
+  alertType: String!
+  message: String!
+  metric: String!
+  metricValue: Float!
+  threshold: Float!
+  anomalyScore: Float!
+}
+
+type AirQualityAggregateModel {
+  deviceId: String!
+  locationId: String!
+  windowStart: DateTime!
+  windowEnd: DateTime!
+  sampleCount: Int!
+  avgPm25: Float!
+  avgPm10: Float!
+  avgCo2: Float!
+  avgTemperature: Float!
+  avgHumidity: Float!
+  avgAqi: Float!
+  maxAqi: Int!
+}
+
+type PipelineMetricsModel {
+  updatedAt: DateTime!
+  batchId: Int!
+  recordsProcessed: Int!
+  invalidRecords: Int!
+  alertsGenerated: Int!
+  avgLatencyMs: Float!
+  maxLatencyMs: Float!
 }
 
 type Query {
@@ -77,6 +120,9 @@ type Query {
   latestReadingByDevice(deviceId: String!): AirQualityReadingModel
   readingsByDevice(input: ReadingsFilterInput!): [AirQualityReadingModel!]!
   readingsByLocation(input: ReadingsFilterInput!): [AirQualityReadingModel!]!
+  alertsByDevice(input: ReadingsFilterInput!): [AirQualityAlertModel!]!
+  aggregatesByDevice(input: ReadingsFilterInput!): [AirQualityAggregateModel!]!
+  pipelineMetrics: PipelineMetricsModel
 }
 
 input ReadingsFilterInput {
@@ -95,6 +141,7 @@ type Mutation {
   updateDevice(input: UpdateDeviceInput!): DeviceModel!
   removeDevice(id: String!): DeviceModel!
   createReading(input: CreateReadingInput!): AirQualityReadingModel!
+  publishSimulatedReading(deviceId: String!, locationId: String!, scenario: String): Boolean!
 }
 
 input CreateLocationInput {

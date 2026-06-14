@@ -86,11 +86,11 @@ async function emitOnce(producer: Producer) {
 }
 
 function createOutdoorReading(): ReadingPayload {
-  const pm25 = round(randomBetween(4, 38));
-  const pm10 = round(pm25 + randomBetween(6, 32));
-  const co2 = round(randomBetween(380, 720));
-  const temperature = round(randomBetween(5, 34));
-  const humidity = round(randomBetween(30, 85));
+  const pm25 = round(randomBetween(4, 180));
+  const pm10 = round(pm25 + randomBetween(6, 80));
+  const co2 = round(randomBetween(380, 2400));
+  const temperature = round(randomBetween(5, 38));
+  const humidity = round(randomBetween(25, 90));
 
   return {
     pm25,
@@ -105,7 +105,7 @@ function createOutdoorReading(): ReadingPayload {
 function calculateAqi(pm25: number, pm10: number) {
   const pm25Score = (pm25 / 35.4) * 100;
   const pm10Score = (pm10 / 154) * 100;
-  return Math.max(1, Math.round(Math.max(pm25Score, pm10Score)));
+  return Math.min(500, Math.max(1, Math.round(Math.max(pm25Score, pm10Score))));
 }
 
 function randomBetween(min: number, max: number) {

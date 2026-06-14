@@ -70,13 +70,32 @@ export const LATEST_READING_QUERY = gql`
       temperature
       humidity
       aqi
+      anomalyScore
+      alertLevel
+      qualityStatus
+      processedAt
+      processingLatencyMs
     }
   }
 `;
 
-export const CREATE_READING_MUTATION = gql`
-  mutation CreateReading($input: CreateReadingInput!) {
-    createReading(input: $input) {
+export const PUBLISH_SIMULATED_READING_MUTATION = gql`
+  mutation PublishSimulatedReading(
+    $deviceId: String!
+    $locationId: String!
+    $scenario: String
+  ) {
+    publishSimulatedReading(
+      deviceId: $deviceId
+      locationId: $locationId
+      scenario: $scenario
+    )
+  }
+`;
+
+export const DEVICE_ANALYTICS_QUERY = gql`
+  query DeviceAnalytics($input: ReadingsFilterInput!) {
+    readingsByDevice(input: $input) {
       deviceId
       locationId
       timestamp
@@ -86,6 +105,46 @@ export const CREATE_READING_MUTATION = gql`
       temperature
       humidity
       aqi
+      anomalyScore
+      alertLevel
+      qualityStatus
+      processedAt
+      processingLatencyMs
+    }
+    alertsByDevice(input: $input) {
+      deviceId
+      locationId
+      timestamp
+      alertLevel
+      alertType
+      message
+      metric
+      metricValue
+      threshold
+      anomalyScore
+    }
+    aggregatesByDevice(input: $input) {
+      deviceId
+      locationId
+      windowStart
+      windowEnd
+      sampleCount
+      avgPm25
+      avgPm10
+      avgCo2
+      avgTemperature
+      avgHumidity
+      avgAqi
+      maxAqi
+    }
+    pipelineMetrics {
+      updatedAt
+      batchId
+      recordsProcessed
+      invalidRecords
+      alertsGenerated
+      avgLatencyMs
+      maxLatencyMs
     }
   }
 `;
@@ -124,4 +183,47 @@ export type AirQualityReading = {
   temperature: number;
   humidity: number;
   aqi: number;
+  anomalyScore?: number | null;
+  alertLevel?: string | null;
+  qualityStatus?: string | null;
+  processedAt?: string | null;
+  processingLatencyMs?: number | null;
+};
+
+export type AirQualityAlert = {
+  deviceId: string;
+  locationId: string;
+  timestamp: string;
+  alertLevel: string;
+  alertType: string;
+  message: string;
+  metric: string;
+  metricValue: number;
+  threshold: number;
+  anomalyScore: number;
+};
+
+export type AirQualityAggregate = {
+  deviceId: string;
+  locationId: string;
+  windowStart: string;
+  windowEnd: string;
+  sampleCount: number;
+  avgPm25: number;
+  avgPm10: number;
+  avgCo2: number;
+  avgTemperature: number;
+  avgHumidity: number;
+  avgAqi: number;
+  maxAqi: number;
+};
+
+export type PipelineMetrics = {
+  updatedAt: string;
+  batchId: number;
+  recordsProcessed: number;
+  invalidRecords: number;
+  alertsGenerated: number;
+  avgLatencyMs: number;
+  maxLatencyMs: number;
 };

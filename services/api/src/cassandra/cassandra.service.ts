@@ -28,7 +28,7 @@ export class CassandraService implements OnModuleDestroy {
     return this.client.execute(query, params, {
       prepare: true,
       ...options,
-    }) as Promise<types.ResultSet & { rows: T[] }>;
+    }) as unknown as Promise<CassandraResult<T>>;
   }
 
   onModuleDestroy() {
@@ -40,4 +40,8 @@ type CassandraQueryOptions = {
   prepare?: boolean;
   consistency?: number;
   fetchSize?: number;
+};
+
+type CassandraResult<T> = {
+  rows: T[];
 };

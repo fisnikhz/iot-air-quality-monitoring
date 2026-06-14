@@ -55,7 +55,8 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
 
   spark:
-    image: bitnami/spark:3.5.1
+    image: apache/spark:3.5.1
+    user: root
     restart: "no"
     depends_on:
       - kafka
@@ -63,8 +64,10 @@ services:
     volumes:
       - ../spark/jobs:/opt/spark/jobs
       - spark-checkpoints:/tmp/spark-checkpoints
+      - spark-ivy:/tmp/.ivy2
 
 volumes:
   mongo-data:
   cassandra-data:
   spark-checkpoints:
+  spark-ivy:

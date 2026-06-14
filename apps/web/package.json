@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:e2e": "node scripts/verify-pipeline.mjs"
   },
   "dependencies": {
     "@apollo/client": "^4.2.2",

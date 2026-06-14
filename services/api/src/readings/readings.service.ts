@@ -4,6 +4,9 @@ import { CreateReadingInput } from './dto/create-reading.input';
 import { ReadingsFilterInput } from './dto/readings-filter.input';
 import { ReadingsGateway } from './readings.gateway';
 import { AirQualityReadingModel } from './models/air-quality-reading.model';
+import { AirQualityAlertModel } from './models/air-quality-alert.model';
+import { AirQualityAggregateModel } from './models/air-quality-aggregate.model';
+import { PipelineMetricsModel } from './models/pipeline-metrics.model';
 
 @Injectable()
 export class ReadingsService {
@@ -94,7 +97,7 @@ export class ReadingsService {
       [input.id, input.day, input.limit ?? 100],
     );
 
-    return result.rows.map((row) => this.mapRow(row as unknown as ReadingRow));
+    return result.rows.map((row) => this.mapRow(row));
   }
 
   async findByLocation(input: ReadingsFilterInput) {
@@ -103,7 +106,75 @@ export class ReadingsService {
       [input.id, input.day, input.limit ?? 100],
     );
 
-    return result.rows.map((row) => this.mapRow(row as unknown as ReadingRow));
+    return result.rows.map((row) => this.mapRow(row));
+  }
+
+  async findAlertsByDevice(
+    input: ReadingsFilterInput,
+  ): Promise<AirQualityAlertModel[]> {
+    const result = await this.cassandraService.execute<AlertRow>(
+      'SELECT * FROM alerts_by_device_day WHERE device_id = ? AND day = ? LIMIT ?',
+      [input.id, input.day, input.limit ?? 20],
+    );
+
+    return result.rows.map((row) => ({
+      deviceId: row.device_id,
+      locationId: row.location_id,
+      timestamp: row.ts,
+      alertLevel: row.alert_level,
+      alertType: row.alert_type,
+      message: row.message,
+      metric: row.metric,
+      metricValue: row.metric_value,
+      threshold: row.threshold,
+      anomalyScore: row.anomaly_score,
+    }));
+  }
+
+  async findAggregatesByDevice(
+    input: ReadingsFilterInput,
+  ): Promise<AirQualityAggregateModel[]> {
+    const result = await this.cassandraService.execute<AggregateRow>(
+      'SELECT * FROM aggregates_by_device_day WHERE device_id = ? AND day = ? LIMIT ?',
+      [input.id, input.day, input.limit ?? 30],
+    );
+
+    return result.rows.map((row) => ({
+      deviceId: row.device_id,
+      locationId: row.location_id,
+      windowStart: row.window_start,
+      windowEnd: row.window_end,
+      sampleCount: Number(row.sample_count),
+      avgPm25: row.avg_pm25,
+      avgPm10: row.avg_pm10,
+      avgCo2: row.avg_co2,
+      avgTemperature: row.avg_temperature,
+      avgHumidity: row.avg_humidity,
+      avgAqi: row.avg_aqi,
+      maxAqi: row.max_aqi,
+    }));
+  }
+
+  async getPipelineMetrics(): Promise<PipelineMetricsModel | null> {
+    const result = await this.cassandraService.execute<PipelineMetricsRow>(
+      'SELECT * FROM pipeline_metrics WHERE metric_id = ?',
+      ['latest'],
+    );
+    const row = result.rows[0];
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      updatedAt: row.updated_at,
+      batchId: Number(row.batch_id),
+      recordsProcessed: Number(row.records_processed),
+      invalidRecords: Number(row.invalid_records),
+      alertsGenerated: Number(row.alerts_generated),
+      avgLatencyMs: row.avg_latency_ms,
+      maxLatencyMs: Number(row.max_latency_ms),
+    };
   }
 
   private toDay(date: Date) {
@@ -121,6 +192,11 @@ export class ReadingsService {
       temperature: row.temperature,
       humidity: row.humidity,
       aqi: row.aqi,
+      anomalyScore: row.anomaly_score,
+      alertLevel: row.alert_level,
+      qualityStatus: row.quality_status,
+      processedAt: row.processed_at,
+      processingLatencyMs: Number(row.processing_latency_ms ?? 0),
     };
   }
 }
@@ -135,4 +211,47 @@ type ReadingRow = {
   temperature: number;
   humidity: number;
   aqi: number;
+  anomaly_score?: number;
+  alert_level?: string;
+  quality_status?: string;
+  processed_at?: Date;
+  processing_latency_ms?: number;
+};
+
+type AlertRow = {
+  device_id: string;
+  location_id: string;
+  ts: Date;
+  alert_level: string;
+  alert_type: string;
+  message: string;
+  metric: string;
+  metric_value: number;
+  threshold: number;
+  anomaly_score: number;
+};
+
+type AggregateRow = {
+  device_id: string;
+  location_id: string;
+  window_start: Date;
+  window_end: Date;
+  sample_count: number;
+  avg_pm25: number;
+  avg_pm10: number;
+  avg_co2: number;
+  avg_temperature: number;
+  avg_humidity: number;
+  avg_aqi: number;
+  max_aqi: number;
+};
+
+type PipelineMetricsRow = {
+  updated_at: Date;
+  batch_id: number;
+  records_processed: number;
+  invalid_records: number;
+  alerts_generated: number;
+  avg_latency_ms: number;
+  max_latency_ms: number;
 };

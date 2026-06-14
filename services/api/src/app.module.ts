@@ -13,6 +13,7 @@ import { LocationsModule } from './locations/locations.module';
 import { DevicesModule } from './devices/devices.module';
 import { CassandraModule } from './cassandra/cassandra.module';
 import { ReadingsModule } from './readings/readings.module';
+import { Request } from 'express';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { ReadingsModule } from './readings/readings.module';
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       playground: true,
-      context: ({ req }) => ({ req }),
+      context: ({ req }: { req: Request }) => ({ req }),
     }),
     UsersModule,
     AuthModule,
